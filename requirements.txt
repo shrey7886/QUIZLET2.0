@@ -31,6 +31,12 @@ requests==2.31.0
 # Email validation for Pydantic
 email-validator==2.1.0
 
+# OAuth Support
+google-auth==2.23.4
+google-auth-oauthlib==1.1.0
+google-auth-httplib2==0.1.1
+PyJWT==2.8.0
+
 # PDF Generation (optional) - commented out due to build issues
 # reportlab==4.0.7
 # Pillow==10.1.0

@@ -1,7 +1,7 @@
 # Import all models to ensure they are registered with SQLAlchemy
 from .user import User
-from .quiz import Quiz, Question, UserAnswer
-from .analytics import UserProgress, TopicAnalytics, DifficultyAnalytics, QuizHistory, QuestionAnalytics, LearningPath
+from .quiz import Quiz, Question, UserAnswer, QuizHistory
+from .analytics import UserProgress, TopicAnalytics, DifficultyAnalytics, QuestionAnalytics, LearningPath
 from .chat import ChatRoom, ChatParticipant, ChatMessage, StudyGroup, StudyGroupMember, ChatNotification
 from .flashcards import Flashcard, FlashcardReview, FlashcardDeck, DeckFlashcard, StudySession
 
@@ -11,11 +11,11 @@ __all__ = [
     "User",
     
     # Quiz models
-    "Quiz", "Question", "UserAnswer",
+    "Quiz", "Question", "UserAnswer", "QuizHistory",
     
     # Analytics models
     "UserProgress", "TopicAnalytics", 
-    "DifficultyAnalytics", "QuizHistory", "QuestionAnalytics", "LearningPath",
+    "DifficultyAnalytics", "QuestionAnalytics", "LearningPath",
     
     # Chat models
     "ChatRoom", "ChatParticipant", "ChatMessage", 

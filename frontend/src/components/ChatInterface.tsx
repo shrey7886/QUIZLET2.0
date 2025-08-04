@@ -1,896 +1,308 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { chatAPI } from '../services/api';
-import Header from './Header';
 
-interface ChatRoom {
-  id: number;
-  name: string;
-  description?: string;
-  room_type: string;
-  topic?: string;
-  participant_count: number;
-  created_at: string;
-}
-
-interface ChatMessage {
-  id: number;
-  room_id: number;
-  user_id: number;
+interface Message {
+  id: string;
   content: string;
-  message_type: string;
-  metadata: any;
-  username: string;
-  created_at: string;
-  is_edited: boolean;
-  reply_to_message?: ChatMessage;
-}
-
-interface TopicSuggestion {
-  id: number;
-  topic: string;
-  description?: string;
-  difficulty?: string;
-  category?: string;
-  upvotes: number;
-  downvotes: number;
-  status: string;
-  username: string;
-  created_at: string;
-}
-
-interface StudyGroup {
-  id: number;
-  name: string;
-  description?: string;
-  topic: string;
-  difficulty: string;
-  max_members: number;
-  is_public: boolean;
-  member_count: number;
-  creator_username: string;
-  created_at: string;
+  sender: 'user' | 'ai';
+  timestamp: Date;
+  type: 'text' | 'loading' | 'error';
 }
 
 const ChatInterface: React.FC = () => {
   const { user } = useAuth();
-  const [rooms, setRooms] = useState<ChatRoom[]>([]);
-  const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>('');
-  const [activeTab, setActiveTab] = useState('chat');
-  const [suggestions, setSuggestions] = useState<TopicSuggestion[]>([]);
-  const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
-  const [showCreateRoom, setShowCreateRoom] = useState(false);
-  const [showCreateSuggestion, setShowCreateSuggestion] = useState(false);
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      content: "Hello! I'm your AI learning assistant. I can help you with:\n\n• Explaining difficult concepts\n• Creating practice questions\n• Providing study tips\n• Answering your questions\n\nWhat would you like to learn about today?",
+      sender: 'ai',
+      timestamp: new Date(),
+      type: 'text'
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [typingUsers, setTypingUsers] = useState<string[]>([]);
-  
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-
-  useEffect(() => {
-    loadRooms();
-    loadSuggestions();
-    loadStudyGroups();
-  }, []);
-
-  useEffect(() => {
-    if (selectedRoom) {
-      loadMessages();
-      connectWebSocket();
-    }
-    
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [selectedRoom]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const loadRooms = async () => {
-    try {
-      setLoading(true);
-      const response = await chatAPI.getUserRooms();
-      setRooms(response.data);
-      
-      // Auto-select first room if none selected
-      if (response.data.length > 0 && !selectedRoom) {
-        setSelectedRoom(response.data[0]);
-      }
-    } catch (err: any) {
-      setError('Failed to load chat rooms');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMessages = async () => {
-    if (!selectedRoom) return;
-    
-    try {
-      const response = await chatAPI.getRoomMessages(selectedRoom.id);
-      setMessages(response.data.reverse()); // Reverse to show newest first
-    } catch (err: any) {
-      setError('Failed to load messages');
-    }
-  };
-
-  const loadSuggestions = async () => {
-    try {
-      const response = await chatAPI.getTopicSuggestions();
-      setSuggestions(response.data);
-    } catch (err: any) {
-      console.error('Failed to load suggestions:', err);
-    }
-  };
-
-  const loadStudyGroups = async () => {
-    try {
-      const response = await chatAPI.getStudyGroups();
-      setStudyGroups(response.data);
-    } catch (err: any) {
-      console.error('Failed to load study groups:', err);
-    }
-  };
-
-  const connectWebSocket = () => {
-    if (!selectedRoom || !user) return;
-
-    const ws = new WebSocket(`ws://localhost:8000/api/chat/ws/room/${selectedRoom.id}/${user.id}`);
-    
-    ws.onopen = () => {
-      console.log('Connected to chat room');
-    };
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      
-      if (data.type === 'message') {
-        setMessages(prev => [...prev, data.message]);
-      } else if (data.type === 'typing') {
-        if (data.is_typing) {
-          setTypingUsers(prev => Array.from(new Set([...prev, data.username])));
-        } else {
-          setTypingUsers(prev => prev.filter(u => u !== data.username));
-        }
-      }
-    };
-    
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-    
-    ws.onclose = () => {
-      console.log('Disconnected from chat room');
-    };
-    
-    wsRef.current = ws;
-  };
-
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedRoom) return;
-
-    try {
-      const messageData = {
-        room_id: selectedRoom.id,
-        content: newMessage,
-        message_type: 'text'
-      };
-      
-      const response = await chatAPI.sendMessage(messageData);
-      setNewMessage('');
-      
-      // Add message to local state
-      setMessages(prev => [...prev, response.data]);
-      
-      // Send typing indicator
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({
-          type: 'typing',
-          room_id: selectedRoom.id,
-          user_id: user?.id,
-          username: user?.username,
-          is_typing: false
-        }));
-      }
-    } catch (err: any) {
-      setError('Failed to send message');
-    }
-  };
-
-  const handleTyping = () => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-    
-    if (!isTyping) {
-      setIsTyping(true);
-      wsRef.current.send(JSON.stringify({
-        type: 'typing',
-        room_id: selectedRoom?.id,
-        user_id: user?.id,
-        username: user?.username,
-        is_typing: true
-      }));
-      
-      // Stop typing indicator after 3 seconds
-      setTimeout(() => {
-        setIsTyping(false);
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({
-            type: 'typing',
-            room_id: selectedRoom?.id,
-            user_id: user?.id,
-            username: user?.username,
-            is_typing: false
-          }));
-        }
-      }, 3000);
-    }
-  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
-  const shareTopic = async (topic: string, difficulty: string) => {
-    if (!selectedRoom) return;
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: inputMessage,
+      sender: 'user',
+      timestamp: new Date(),
+      type: 'text'
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    // Add typing indicator
+    const typingMessage: Message = {
+      id: 'typing',
+      content: '',
+      sender: 'ai',
+      timestamp: new Date(),
+      type: 'loading'
+    };
+
+    setMessages(prev => [...prev, typingMessage]);
 
     try {
-      const messageData = {
-        room_id: selectedRoom.id,
-        content: `Shared topic: ${topic}`,
-        message_type: 'topic_share',
-        metadata: { topic, difficulty }
+      // Simulate AI response
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Remove typing indicator
+      setMessages(prev => prev.filter(msg => msg.id !== 'typing'));
+
+      // Add AI response
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: generateAIResponse(inputMessage),
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'text'
       };
+
+      setMessages(prev => [...prev, aiResponse]);
+    } catch (error) {
+      // Remove typing indicator and add error message
+      setMessages(prev => prev.filter(msg => msg.id !== 'typing'));
       
-      await chatAPI.sendMessage(messageData);
-    } catch (err: any) {
-      setError('Failed to share topic');
-    }
-  };
-
-  const shareQuizResult = async (quizData: any) => {
-    if (!selectedRoom) return;
-
-    try {
-      const messageData = {
-        room_id: selectedRoom.id,
-        content: `Just completed a quiz on ${quizData.topic} with ${quizData.score}% score!`,
-        message_type: 'result_share',
-        metadata: quizData
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: 'Sorry, I encountered an error. Please try again.',
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'error'
       };
-      
-      await chatAPI.sendMessage(messageData);
-    } catch (err: any) {
-      setError('Failed to share quiz result');
+
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const voteOnSuggestion = async (suggestionId: number, voteType: 'upvote' | 'downvote') => {
-    try {
-      await chatAPI.voteOnSuggestion(suggestionId, voteType);
-      loadSuggestions(); // Reload to get updated votes
-    } catch (err: any) {
-      setError('Failed to vote on suggestion');
+  const generateAIResponse = (userInput: string): string => {
+    const responses = [
+      "That's a great question! Let me explain this concept in detail...",
+      "I understand what you're asking about. Here's what you need to know...",
+      "Excellent question! This is a fundamental concept that's important to grasp...",
+      "I'd be happy to help you with that! Let me break it down for you...",
+      "That's an interesting topic! Here's what I can tell you about it...",
+      "Great question! This relates to several important concepts. Let me explain...",
+      "I'm glad you asked about this! It's a key concept that many students find challenging...",
+      "Perfect timing for this question! Let me walk you through it step by step..."
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
-  const joinStudyGroup = async (groupId: number) => {
-    try {
-      await chatAPI.joinStudyGroup(groupId);
-      loadStudyGroups(); // Reload to get updated member count
-    } catch (err: any) {
-      setError('Failed to join study group');
-    }
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <Header />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">
-            Community Chat
-          </h1>
-          <p className="text-xl text-slate-600">
-            Connect with other learners, share topics, and collaborate on your learning journey
-          </p>
-        </div>
+  const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
+    const isUser = message.sender === 'user';
 
-        {/* Navigation Tabs */}
-        <div className="mb-8">
-          <nav className="flex space-x-1 bg-white rounded-xl p-1 shadow-sm">
-            {[
-              { id: 'chat', label: 'Chat', icon: '💬' },
-              { id: 'suggestions', label: 'Topic Suggestions', icon: '💡' },
-              { id: 'groups', label: 'Study Groups', icon: '👥' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? 'bg-blue-100 text-blue-700 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {error && (
-          <div className="card mb-8 bg-red-50 border-red-200">
-            <div className="flex items-center space-x-2 text-red-700">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="font-medium">{error}</span>
+    return (
+      <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 animate-fade-in`}>
+        <div className={`max-w-xs lg:max-w-md ${isUser ? 'order-2' : 'order-1'}`}>
+          <div className={`flex items-start space-x-2 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
+            {/* Avatar */}
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+              isUser 
+                ? 'bg-primary-500 text-white' 
+                : 'bg-gradient-to-br from-secondary-500 to-primary-500 text-white'
+            }`}>
+              {isUser ? (
+                <span className="text-sm font-semibold">
+                  {user?.username?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              )}
             </div>
-          </div>
-        )}
 
-        {/* Content */}
-        <div className="animate-slide-up">
-          {activeTab === 'chat' && (
-            <ChatTab
-              rooms={rooms}
-              selectedRoom={selectedRoom}
-              setSelectedRoom={setSelectedRoom}
-              messages={messages}
-              newMessage={newMessage}
-              setNewMessage={setNewMessage}
-              sendMessage={sendMessage}
-              handleTyping={handleTyping}
-              typingUsers={typingUsers}
-              messagesEndRef={messagesEndRef}
-              formatTime={formatTime}
-              shareTopic={shareTopic}
-              shareQuizResult={shareQuizResult}
-              loading={loading}
-            />
-          )}
-          
-          {activeTab === 'suggestions' && (
-            <SuggestionsTab
-              suggestions={suggestions}
-              voteOnSuggestion={voteOnSuggestion}
-              showCreateSuggestion={showCreateSuggestion}
-              setShowCreateSuggestion={setShowCreateSuggestion}
-            />
-          )}
-          
-          {activeTab === 'groups' && (
-            <StudyGroupsTab
-              studyGroups={studyGroups}
-              joinStudyGroup={joinStudyGroup}
-              showCreateGroup={showCreateGroup}
-              setShowCreateGroup={setShowCreateGroup}
-            />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Chat Tab Component
-const ChatTab: React.FC<{
-  rooms: ChatRoom[];
-  selectedRoom: ChatRoom | null;
-  setSelectedRoom: (room: ChatRoom) => void;
-  messages: ChatMessage[];
-  newMessage: string;
-  setNewMessage: (message: string) => void;
-  sendMessage: () => void;
-  handleTyping: () => void;
-  typingUsers: string[];
-  messagesEndRef: React.RefObject<HTMLDivElement>;
-  formatTime: (dateString: string) => string;
-  shareTopic: (topic: string, difficulty: string) => void;
-  shareQuizResult: (quizData: any) => void;
-  loading: boolean;
-}> = ({
-  rooms, selectedRoom, setSelectedRoom, messages, newMessage, setNewMessage,
-  sendMessage, handleTyping, typingUsers, messagesEndRef, formatTime,
-  shareTopic, shareQuizResult, loading
-}) => {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Room List */}
-      <div className="lg:col-span-1">
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-slate-900">Chat Rooms</h3>
-            <button className="btn-primary text-sm px-3 py-1">
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              New
-            </button>
-          </div>
-          
-          <div className="space-y-2">
-            {rooms.map((room) => (
-              <button
-                key={room.id}
-                onClick={() => setSelectedRoom(room)}
-                className={`w-full text-left p-3 rounded-lg transition-all duration-200 ${
-                  selectedRoom?.id === room.id
-                    ? 'bg-blue-100 border-blue-300'
-                    : 'hover:bg-slate-50 border-transparent'
-                } border`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium text-slate-900">{room.name}</h4>
-                    <p className="text-sm text-slate-600">{room.topic || room.description}</p>
+            {/* Message Content */}
+            <div className={`flex-1 ${isUser ? 'text-right' : 'text-left'}`}>
+              <div className={`inline-block p-4 rounded-2xl ${
+                isUser
+                  ? 'bg-primary-500 text-white rounded-br-md'
+                  : message.type === 'error'
+                  ? 'bg-error-100 text-error-800 border border-error-200'
+                  : 'bg-white text-gray-900 border border-gray-200 rounded-bl-md shadow-sm'
+              }`}>
+                {message.type === 'loading' ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                    <span className="text-sm text-gray-500">AI is typing...</span>
                   </div>
-                  <div className="text-xs text-slate-500">
-                    {room.participant_count} online
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Chat Area */}
-      <div className="lg:col-span-3">
-        {selectedRoom ? (
-          <div className="card h-[600px] flex flex-col">
-            {/* Room Header */}
-            <div className="border-b border-slate-200 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">{selectedRoom.name}</h3>
-                  <p className="text-sm text-slate-600">{selectedRoom.participant_count} participants</p>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => shareTopic('Python Basics', 'Easy')}
-                    className="btn-secondary text-sm px-3 py-1"
-                  >
-                    Share Topic
-                  </button>
-                  <button
-                    onClick={() => shareQuizResult({ topic: 'JavaScript', score: 85 })}
-                    className="btn-secondary text-sm px-3 py-1"
-                  >
-                    Share Result
-                  </button>
-                </div>
+                ) : (
+                  <div className="whitespace-pre-wrap">{message.content}</div>
+                )}
+              </div>
+              
+              <div className={`text-xs text-gray-500 mt-1 ${isUser ? 'text-right' : 'text-left'}`}>
+                {formatTime(message.timestamp)}
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+  const QuickActions = () => {
+    const quickActions = [
+      { text: "Explain a concept", icon: "💡" },
+      { text: "Create practice questions", icon: "❓" },
+      { text: "Study tips", icon: "📚" },
+      { text: "Help with homework", icon: "✏️" }
+    ];
+
+    return (
+      <div className="flex flex-wrap gap-2 mb-4">
+        {quickActions.map((action, index) => (
+          <button
+            key={index}
+            onClick={() => setInputMessage(action.text)}
+            className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors duration-200 flex items-center space-x-2"
+          >
+            <span>{action.icon}</span>
+            <span>{action.text}</span>
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 pt-20">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="card mb-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-secondary-500 to-primary-500 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">AI Learning Assistant</h1>
+                <p className="text-gray-600">Ask me anything about your studies!</p>
+              </div>
+              <div className="ml-auto flex items-center space-x-2">
+                <div className="w-3 h-3 bg-success-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-success-600 font-medium">Online</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Chat Container */}
+          <div className="card h-96 flex flex-col">
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.map((message) => (
-                <div key={message.id} className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-semibold text-sm">
-                      {message.username.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className="font-medium text-slate-900">{message.username}</span>
-                      <span className="text-xs text-slate-500">{formatTime(message.created_at)}</span>
-                      {message.is_edited && (
-                        <span className="text-xs text-slate-400">(edited)</span>
-                      )}
-                    </div>
-                    <div className="bg-white border border-slate-200 rounded-lg p-3">
-                      {message.message_type === 'topic_share' ? (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                          <div className="flex items-center space-x-2 text-blue-700 mb-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            <span className="font-medium">Shared Topic</span>
-                          </div>
-                          <p className="text-blue-800">{message.content}</p>
-                          {message.metadata && (
-                            <div className="mt-2 text-sm text-blue-600">
-                              Difficulty: {message.metadata.difficulty}
-                            </div>
-                          )}
-                        </div>
-                      ) : message.message_type === 'result_share' ? (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                          <div className="flex items-center space-x-2 text-green-700 mb-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="font-medium">Quiz Result</span>
-                          </div>
-                          <p className="text-green-800">{message.content}</p>
-                        </div>
-                      ) : (
-                        <p className="text-slate-900">{message.content}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <MessageBubble key={message.id} message={message} />
               ))}
-              
-              {typingUsers.length > 0 && (
-                <div className="flex items-center space-x-2 text-sm text-slate-500">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                  <span>{typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...</span>
-                </div>
-              )}
-              
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Message Input */}
-            <div className="border-t border-slate-200 p-4">
-              <div className="flex space-x-3">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      sendMessage();
-                    } else {
-                      handleTyping();
-                    }
-                  }}
-                  placeholder="Type your message..."
-                  className="flex-1 input-field"
-                />
+            {/* Quick Actions */}
+            <div className="px-6 pb-4">
+              <QuickActions />
+            </div>
+
+            {/* Input Area */}
+            <div className="border-t border-gray-200 p-6">
+              <div className="flex items-end space-x-4">
+                <div className="flex-1">
+                  <textarea
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Type your message here..."
+                    className="w-full p-3 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    rows={1}
+                    style={{ minHeight: '44px', maxHeight: '120px' }}
+                  />
+                </div>
                 <button
-                  onClick={sendMessage}
-                  disabled={!newMessage.trim()}
-                  className="btn-primary px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || isLoading}
+                  className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Send
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
                 </button>
               </div>
-            </div>
-          </div>
-        ) : (
-          <div className="card h-[600px] flex items-center justify-center">
-            <div className="text-center">
-              <svg className="w-16 h-16 text-slate-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              <h3 className="text-lg font-medium text-slate-900 mb-2">Select a Chat Room</h3>
-              <p className="text-slate-600">Choose a room to start chatting with other learners</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Suggestions Tab Component
-const SuggestionsTab: React.FC<{
-  suggestions: TopicSuggestion[];
-  voteOnSuggestion: (id: number, voteType: 'upvote' | 'downvote') => void;
-  showCreateSuggestion: boolean;
-  setShowCreateSuggestion: (show: boolean) => void;
-}> = ({ suggestions, voteOnSuggestion, showCreateSuggestion, setShowCreateSuggestion }) => {
-  const [newSuggestion, setNewSuggestion] = useState({
-    topic: '',
-    description: '',
-    difficulty: 'Medium',
-    category: ''
-  });
-
-  const createSuggestion = async () => {
-    try {
-      await chatAPI.createTopicSuggestion(newSuggestion);
-      setNewSuggestion({ topic: '', description: '', difficulty: 'Medium', category: '' });
-      setShowCreateSuggestion(false);
-      // Reload suggestions
-    } catch (err: any) {
-      console.error('Failed to create suggestion:', err);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900">Topic Suggestions</h2>
-        <button
-          onClick={() => setShowCreateSuggestion(true)}
-          className="btn-primary"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Suggest Topic
-        </button>
-      </div>
-
-      {showCreateSuggestion && (
-        <div className="card">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">Create Topic Suggestion</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Topic</label>
-              <input
-                type="text"
-                value={newSuggestion.topic}
-                onChange={(e) => setNewSuggestion({ ...newSuggestion, topic: e.target.value })}
-                className="input-field"
-                placeholder="Enter topic name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
-              <textarea
-                value={newSuggestion.description}
-                onChange={(e) => setNewSuggestion({ ...newSuggestion, description: e.target.value })}
-                className="input-field"
-                rows={3}
-                placeholder="Describe the topic"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Difficulty</label>
-                <select
-                  value={newSuggestion.difficulty}
-                  onChange={(e) => setNewSuggestion({ ...newSuggestion, difficulty: e.target.value })}
-                  className="input-field"
-                >
-                  <option value="Easy">Easy</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Hard">Hard</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
-                <input
-                  type="text"
-                  value={newSuggestion.category}
-                  onChange={(e) => setNewSuggestion({ ...newSuggestion, category: e.target.value })}
-                  className="input-field"
-                  placeholder="e.g., Programming, Math"
-                />
+              
+              <div className="mt-2 text-xs text-gray-500">
+                Press Enter to send, Shift+Enter for new line
               </div>
             </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={createSuggestion}
-                disabled={!newSuggestion.topic.trim()}
-                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Submit Suggestion
-              </button>
-              <button
-                onClick={() => setShowCreateSuggestion(false)}
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
+          </div>
+
+          {/* Features */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="card text-center">
+              <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Smart Explanations</h3>
+              <p className="text-gray-600 text-sm">Get detailed explanations tailored to your learning level</p>
+            </div>
+
+            <div className="card text-center">
+              <div className="w-12 h-12 bg-success-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Practice Questions</h3>
+              <p className="text-gray-600 text-sm">Generate custom practice questions on any topic</p>
+            </div>
+
+            <div className="card text-center">
+              <div className="w-12 h-12 bg-warning-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Study Tips</h3>
+              <p className="text-gray-600 text-sm">Get personalized study strategies and tips</p>
             </div>
           </div>
         </div>
-      )}
-
-      <div className="grid gap-4">
-        {suggestions.map((suggestion) => (
-          <div key={suggestion.id} className="card">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <h3 className="font-semibold text-slate-900">{suggestion.topic}</h3>
-                  <span className={`badge ${
-                    suggestion.difficulty === 'Easy' ? 'badge-success' :
-                    suggestion.difficulty === 'Medium' ? 'badge-warning' : 'badge-error'
-                  }`}>
-                    {suggestion.difficulty}
-                  </span>
-                  {suggestion.category && (
-                    <span className="badge badge-secondary">{suggestion.category}</span>
-                  )}
-                </div>
-                {suggestion.description && (
-                  <p className="text-slate-600 mb-3">{suggestion.description}</p>
-                )}
-                <div className="flex items-center space-x-4 text-sm text-slate-500">
-                  <span>Suggested by {suggestion.username}</span>
-                  <span>{new Date(suggestion.created_at).toLocaleDateString()}</span>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => voteOnSuggestion(suggestion.id, 'upvote')}
-                  className="flex items-center space-x-1 text-green-600 hover:text-green-700"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                  </svg>
-                  <span>{suggestion.upvotes}</span>
-                </button>
-                <button
-                  onClick={() => voteOnSuggestion(suggestion.id, 'downvote')}
-                  className="flex items-center space-x-1 text-red-600 hover:text-red-700"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                  <span>{suggestion.downvotes}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Study Groups Tab Component
-const StudyGroupsTab: React.FC<{
-  studyGroups: StudyGroup[];
-  joinStudyGroup: (id: number) => void;
-  showCreateGroup: boolean;
-  setShowCreateGroup: (show: boolean) => void;
-}> = ({ studyGroups, joinStudyGroup, showCreateGroup, setShowCreateGroup }) => {
-  const [newGroup, setNewGroup] = useState({
-    name: '',
-    description: '',
-    topic: '',
-    difficulty: 'Medium',
-    max_members: 20,
-    is_public: true
-  });
-
-  const createGroup = async () => {
-    try {
-      await chatAPI.createStudyGroup(newGroup);
-      setNewGroup({ name: '', description: '', topic: '', difficulty: 'Medium', max_members: 20, is_public: true });
-      setShowCreateGroup(false);
-      // Reload groups
-    } catch (err: any) {
-      console.error('Failed to create group:', err);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900">Study Groups</h2>
-        <button
-          onClick={() => setShowCreateGroup(true)}
-          className="btn-primary"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Create Group
-        </button>
-      </div>
-
-      {showCreateGroup && (
-        <div className="card">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">Create Study Group</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Group Name</label>
-              <input
-                type="text"
-                value={newGroup.name}
-                onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
-                className="input-field"
-                placeholder="Enter group name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
-              <textarea
-                value={newGroup.description}
-                onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
-                className="input-field"
-                rows={3}
-                placeholder="Describe the study group"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Topic</label>
-                <input
-                  type="text"
-                  value={newGroup.topic}
-                  onChange={(e) => setNewGroup({ ...newGroup, topic: e.target.value })}
-                  className="input-field"
-                  placeholder="Study topic"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Difficulty</label>
-                <select
-                  value={newGroup.difficulty}
-                  onChange={(e) => setNewGroup({ ...newGroup, difficulty: e.target.value })}
-                  className="input-field"
-                >
-                  <option value="Easy">Easy</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Hard">Hard</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={createGroup}
-                disabled={!newGroup.name.trim() || !newGroup.topic.trim()}
-                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Create Group
-              </button>
-              <button
-                onClick={() => setShowCreateGroup(false)}
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="grid gap-4">
-        {studyGroups.map((group) => (
-          <div key={group.id} className="card">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <h3 className="font-semibold text-slate-900">{group.name}</h3>
-                  <span className={`badge ${
-                    group.difficulty === 'Easy' ? 'badge-success' :
-                    group.difficulty === 'Medium' ? 'badge-warning' : 'badge-error'
-                  }`}>
-                    {group.difficulty}
-                  </span>
-                  {!group.is_public && (
-                    <span className="badge badge-secondary">Private</span>
-                  )}
-                </div>
-                {group.description && (
-                  <p className="text-slate-600 mb-3">{group.description}</p>
-                )}
-                <div className="flex items-center space-x-4 text-sm text-slate-500">
-                  <span>Topic: {group.topic}</span>
-                  <span>{group.member_count}/{group.max_members} members</span>
-                  <span>Created by {group.creator_username}</span>
-                </div>
-              </div>
-              <button
-                onClick={() => joinStudyGroup(group.id)}
-                className="btn-secondary"
-              >
-                Join Group
-              </button>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

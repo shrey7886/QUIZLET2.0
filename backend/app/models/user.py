@@ -33,4 +33,10 @@ class User(Base):
     created_rooms = relationship("ChatRoom", back_populates="creator")
     # topic_suggestions = relationship("TopicSuggestion", foreign_keys="[TopicSuggestion.user_id]", back_populates="user")  # Temporarily disabled
     created_study_groups = relationship("StudyGroup", back_populates="creator")
-    study_group_memberships = relationship("StudyGroupMember", back_populates="user") 
+    study_group_memberships = relationship("StudyGroupMember", back_populates="user")
+    
+    # Flashcard Relationships
+    flashcards = relationship("Flashcard", back_populates="user")
+    flashcard_reviews = relationship("FlashcardReview", back_populates="user")
+    flashcard_decks = relationship("FlashcardDeck", back_populates="user")
+    study_sessions = relationship("StudySession", back_populates="user") 

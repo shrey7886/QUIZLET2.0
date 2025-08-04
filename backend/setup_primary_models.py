@@ -128,15 +128,15 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 # LLM Providers Configuration - PRIMARY MODELS
 
 # Google (Gemini 1.5 Flash) - PRIMARY
-GOOGLE_API_KEY=AIzaSyBejBZfI1HFC43QOJ5pqWqpsRxa72oMZFI
+GOOGLE_API_KEY=your-google-api-key-here
 GOOGLE_MODEL=gemini-1.5-flash
 
 # Groq (Ultra-fast inference) - PRIMARY
-GROQ_API_KEY=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
+GROQ_API_KEY=your-groq-api-key-here
 GROQ_MODEL=mixtral-8x7b-32768
 
 # Cohere (Command R+) - PRIMARY
-COHERE_API_KEY=o9tJyWIy8GXbsKYViGHdDD7TUlhouodmLyhrxTq0
+COHERE_API_KEY=your-cohere-api-key-here
 COHERE_MODEL=command-r-plus
 
 # Optional fallback providers (leave empty if not using)

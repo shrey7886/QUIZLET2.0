@@ -1,141 +1,87 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import Header from './components/Header';
 import LoginForm from './components/LoginForm';
 import QuizDashboard from './components/QuizDashboard';
+import QuizGenerator from './components/QuizGenerator';
 import QuizInterface from './components/QuizInterface';
 import ResultsPage from './components/ResultsPage';
 import ChatbotInterface from './components/ChatbotInterface';
-import AnalyticsDashboard from './components/AnalyticsDashboard';
 import FlashcardMode from './components/FlashcardMode';
-import ChatInterface from './components/ChatInterface';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
+import ProtectedRoute from './components/ProtectedRoute';
 
-// Protected Route Component
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="spinner w-12 h-12 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return user ? <>{children}</> : <Navigate to="/login" replace />;
-};
-
-// Public Route Component (redirects to dashboard if already logged in)
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="spinner w-12 h-12 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return user ? <Navigate to="/dashboard" replace /> : <>{children}</>;
-};
-
-const App: React.FC = () => {
+function App() {
   return (
     <AuthProvider>
       <Router>
         <div className="App">
+          <Header />
           <Routes>
-            {/* Public Routes */}
-            <Route
-              path="/login"
-              element={
-                <PublicRoute>
-                  <LoginForm />
-                </PublicRoute>
-              }
-            />
-            
-            {/* Protected Routes */}
-            <Route
-              path="/dashboard"
+            <Route path="/login" element={<LoginForm />} />
+            <Route 
+              path="/dashboard" 
               element={
                 <ProtectedRoute>
                   <QuizDashboard />
                 </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/quiz-generator" 
+              element={
+                <ProtectedRoute>
+                  <QuizGenerator />
+                </ProtectedRoute>
               }
             />
-            
-            <Route
-              path="/quiz"
+            <Route 
+              path="/quiz" 
               element={
                 <ProtectedRoute>
                   <QuizInterface />
                 </ProtectedRoute>
               }
             />
-            
-            <Route
-              path="/results"
+            <Route 
+              path="/results" 
               element={
                 <ProtectedRoute>
                   <ResultsPage />
                 </ProtectedRoute>
               }
             />
-            
-            <Route
-              path="/chat"
+            <Route 
+              path="/chat" 
               element={
                 <ProtectedRoute>
                   <ChatbotInterface />
                 </ProtectedRoute>
-              }
+              } 
             />
-            
-            <Route
-              path="/analytics"
-              element={
-                <ProtectedRoute>
-                  <AnalyticsDashboard />
-                </ProtectedRoute>
-              }
-            />
-            
-            <Route
-              path="/flashcards"
+            <Route 
+              path="/flashcards" 
               element={
                 <ProtectedRoute>
                   <FlashcardMode />
                 </ProtectedRoute>
-              }
+              } 
             />
-            
-            <Route
-              path="/community"
+            <Route 
+              path="/analytics" 
               element={
                 <ProtectedRoute>
-                  <ChatInterface />
+                  <AnalyticsDashboard />
                 </ProtectedRoute>
-              }
+              } 
             />
-            
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            
-            {/* Catch all route */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<LoginForm />} />
           </Routes>
         </div>
       </Router>
     </AuthProvider>
   );
-};
+}
 
 export default App; 

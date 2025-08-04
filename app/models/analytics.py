@@ -130,52 +130,6 @@ class DifficultyAnalytics(Base):
     user = relationship("User", back_populates="difficulty_analytics")
     user_progress = relationship("UserProgress", back_populates="difficulty_analytics")
 
-class QuizHistory(Base):
-    __tablename__ = "quiz_history"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
-    
-    # Quiz Details
-    topic = Column(String, nullable=False)
-    difficulty = Column(Enum(DifficultyLevel), nullable=False)
-    num_questions = Column(Integer, nullable=False)
-    time_limit = Column(Integer, nullable=False)  # in minutes
-    
-    # Performance Results
-    score = Column(Float, nullable=False)
-    accuracy = Column(Float, nullable=False)
-    correct_answers = Column(Integer, nullable=False)
-    total_questions = Column(Integer, nullable=False)
-    time_taken = Column(Float, nullable=False)  # in minutes
-    
-    # Detailed Analysis
-    question_breakdown = Column(JSON, nullable=False)  # Detailed analysis of each question
-    weak_areas_identified = Column(JSON, default=list)  # Areas that need improvement
-    strengths_identified = Column(JSON, default=list)  # Areas of strength
-    
-    # Time Analysis
-    average_time_per_question = Column(Float, nullable=False)  # in seconds
-    questions_answered_quickly = Column(Integer, default=0)  # Questions answered in <30 seconds
-    questions_answered_slowly = Column(Integer, default=0)  # Questions answered in >2 minutes
-    
-    # Difficulty Progression
-    difficulty_level = Column(String, nullable=False)  # Easy, Medium, Hard
-    next_recommended_difficulty = Column(String, nullable=True)
-    
-    # Learning Insights
-    concepts_mastered = Column(JSON, default=list)
-    concepts_to_review = Column(JSON, default=list)
-    recommended_next_topics = Column(JSON, default=list)
-    
-    # Timestamps
-    completed_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Relationships
-    user = relationship("User", back_populates="quiz_history")
-    quiz = relationship("Quiz", back_populates="history")
-
 class QuestionAnalytics(Base):
     __tablename__ = "question_analytics"
     

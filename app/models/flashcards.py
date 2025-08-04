@@ -21,13 +21,13 @@ class Flashcard(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    question_id = Column(Integer, ForeignKey("questions.id"), nullable=False)
     
     # Flashcard Content
     front_content = Column(Text, nullable=False)  # Question or concept
     back_content = Column(Text, nullable=False)   # Answer or explanation
     hint = Column(Text, nullable=True)            # Optional hint
     tags = Column(JSON, default=list)             # Categories/tags
+    topic = Column(String, nullable=False)        # Topic for categorization
     
     # Learning Algorithm Data
     status = Column(Enum(FlashcardStatus), default=FlashcardStatus.NEW)
@@ -46,7 +46,6 @@ class Flashcard(Base):
     
     # Relationships
     user = relationship("User", back_populates="flashcards")
-    question = relationship("Question", back_populates="flashcards")
     review_history = relationship("FlashcardReview", back_populates="flashcard")
 
 class FlashcardReview(Base):
@@ -98,12 +97,12 @@ class FlashcardDeck(Base):
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     last_studied = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
     user = relationship("User", back_populates="flashcard_decks")
     flashcards = relationship("Flashcard", secondary="deck_flashcards")
+    study_sessions = relationship("StudySession", back_populates="deck")
 
 class DeckFlashcard(Base):
     __tablename__ = "deck_flashcards"

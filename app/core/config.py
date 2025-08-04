@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     
     # Groq (Ultra-fast)
     groq_api_key: Optional[str] = None
-    groq_model: str = "mixtral-8x7b-32768"
+    groq_model: str = "gemma2-9b-it"
     
     # Cohere
     cohere_api_key: Optional[str] = None

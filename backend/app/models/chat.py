@@ -113,7 +113,7 @@ class StudyGroup(Base):
     # Relationships
     creator = relationship("User", back_populates="created_study_groups")
     members = relationship("StudyGroupMember", back_populates="group")
-    chat_room = relationship("ChatRoom", uselist=False)
+    # chat_room = relationship("ChatRoom", uselist=False)  # Temporarily disabled - missing foreign key
 
 class StudyGroupMember(Base):
     __tablename__ = "study_group_members"

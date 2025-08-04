@@ -104,6 +104,7 @@ class FlashcardDeck(Base):
     # Relationships
     user = relationship("User", back_populates="flashcard_decks")
     flashcards = relationship("Flashcard", secondary="deck_flashcards")
+    study_sessions = relationship("StudySession", back_populates="deck")
 
 class DeckFlashcard(Base):
     __tablename__ = "deck_flashcards"

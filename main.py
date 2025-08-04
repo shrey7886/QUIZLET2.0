@@ -2,16 +2,16 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from app.api.routes import auth, quiz, user, analytics, flashcards, chat
+from app.api.routes import auth, quiz, user, analytics, flashcards, chat, tenants
 # Temporarily disable export routes due to PDF dependency issues
 # from app.api.routes import export
 from app.core.config import settings
 import os
 
 app = FastAPI(
-    title="Quizlet AI Quiz Generator",
-    description="A modern quiz platform with LLM-powered question generation, comprehensive analytics, flashcard revision, and real-time community chat",
-    version="1.0.0"
+    title="Quizlet AI Quiz Generator - Multitenant",
+    description="A modern multitenant quiz platform with LLM-powered question generation, comprehensive analytics, flashcard revision, and real-time community chat",
+    version="2.0.0"
 )
 
 # CORS middleware - allow all origins for development
@@ -40,6 +40,7 @@ app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"]
 app.include_router(flashcards.router, prefix="/api/flashcards", tags=["Flashcards"])
 # app.include_router(export.router, prefix="/api/export", tags=["Export"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
+app.include_router(tenants.router, prefix="/api/tenants", tags=["Tenants"])
 
 # Mount static files for frontend
 try:
@@ -65,15 +66,19 @@ async def root():
     # Fallback to API info
     return {
         "message": "🎉 Quizlet AI Quiz Generator API is running!",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "status": "healthy",
+        "architecture": "multitenant",
         "features": [
             "AI-powered quiz generation",
             "Comprehensive analytics dashboard",
             "Flashcard learning system",
             "Real-time community chat",
             "Progress tracking",
-            "Multiple LLM providers support"
+            "Multiple LLM providers support",
+            "Schema-based multitenancy",
+            "Tenant isolation",
+            "Neon PostgreSQL database"
         ],
         "endpoints": {
             "api_docs": "/docs",
@@ -82,9 +87,16 @@ async def root():
             "quiz_generation": "/api/quiz",
             "analytics": "/api/analytics",
             "flashcards": "/api/flashcards",
-            "chat": "/api/chat"
+            "chat": "/api/chat",
+            "tenant_management": "/api/tenants"
         },
         "llm_providers": ["Google AI", "Groq", "Cohere"],
+        "multitenant_features": {
+            "schema_isolation": "Each tenant has isolated database schema",
+            "tenant_management": "Create, manage, and monitor tenants",
+            "data_isolation": "Complete data separation between tenants",
+            "scalability": "Horizontal scaling with connection pooling"
+        },
         "frontend": "If you see this, the frontend is not built. Run 'npm run build' in the frontend directory."
     }
 
@@ -93,7 +105,9 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "version": "1.0.0",
+        "version": "2.0.0",
+        "architecture": "multitenant",
+        "database": "Neon PostgreSQL",
         "timestamp": "2024-01-01T00:00:00Z"
     }
 

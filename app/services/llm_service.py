@@ -32,7 +32,7 @@ class LLMProvider(ABC):
         self.throttler = Throttler(rate_limit=10, period=60)  # 10 requests per minute
         
     @abstractmethod
-    async def generate_quiz(self, config: QuizConfig) -> List[QuestionSchema]:
+    async def generate_quiz(self, config: QuizConfig, history_context: str = "") -> List[QuestionSchema]:
         """Generate quiz questions"""
         pass
     
@@ -47,9 +47,9 @@ class OpenAIProvider(LLMProvider):
         if self.api_key:
             openai.api_key = self.api_key
     
-    async def generate_quiz(self, config: QuizConfig) -> List[QuestionSchema]:
+    async def generate_quiz(self, config: QuizConfig, history_context: str = "") -> List[QuestionSchema]:
         async with self.throttler:
-            prompt = self._create_quiz_prompt(config)
+            prompt = self._create_quiz_prompt(config, history_context)
             
             response = openai.ChatCompletion.create(
                 model=self.model,
@@ -81,7 +81,7 @@ class OpenAIProvider(LLMProvider):
             
             return response.choices[0].message.content
     
-    def _create_quiz_prompt(self, config: QuizConfig) -> str:
+    def _create_quiz_prompt(self, config: QuizConfig, history_context: str = "") -> str:
         return f"""
 You are an expert quiz generator. Create a multiple choice quiz on the topic: "{config.topic}"
 
@@ -91,6 +91,7 @@ Requirements:
 - Each question must have exactly 4 options (A, B, C, D)
 - Provide clear explanations for correct answers
 - Ensure questions are appropriate for the specified difficulty level
+{history_context}
 
 Respond ONLY with valid JSON in this exact format:
 {{
@@ -98,13 +99,11 @@ Respond ONLY with valid JSON in this exact format:
     {{
       "question": "Question text here?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct_answer": "Option A",
-      "explanation": "Detailed explanation of why this is correct."
+      "correct_answer": 0,
+      "explanation": "Explanation for why this answer is correct"
     }}
   ]
 }}
-
-Important: Ensure all questions are unique and relevant to the topic. Make explanations educational and helpful.
 """
 
     def _parse_quiz_response(self, content: str) -> List[QuestionSchema]:
@@ -124,12 +123,12 @@ class AnthropicProvider(LLMProvider):
         super().__init__("anthropic", settings.anthropic_model, settings.anthropic_api_key)
         self.client = Anthropic(api_key=self.api_key) if self.api_key else None
     
-    async def generate_quiz(self, config: QuizConfig) -> List[QuestionSchema]:
+    async def generate_quiz(self, config: QuizConfig, history_context: str = "") -> List[QuestionSchema]:
         if not self.client:
             raise Exception("Anthropic API key not configured")
             
         async with self.throttler:
-            prompt = self._create_quiz_prompt(config)
+            prompt = self._create_quiz_prompt(config, history_context)
             
             response = self.client.messages.create(
                 model=self.model,
@@ -159,7 +158,7 @@ class AnthropicProvider(LLMProvider):
             
             return response.content[0].text
     
-    def _create_quiz_prompt(self, config: QuizConfig) -> str:
+    def _create_quiz_prompt(self, config: QuizConfig, history_context: str = "") -> str:
         return f"""
 You are an expert quiz generator. Create a multiple choice quiz on the topic: "{config.topic}"
 
@@ -169,6 +168,7 @@ Requirements:
 - Each question must have exactly 4 options (A, B, C, D)
 - Provide clear explanations for correct answers
 - Ensure questions are appropriate for the specified difficulty level
+{history_context}
 
 Respond ONLY with valid JSON in this exact format:
 {{
@@ -203,9 +203,9 @@ class GoogleProvider(LLMProvider):
         if self.api_key:
             genai.configure(api_key=self.api_key)
     
-    async def generate_quiz(self, config: QuizConfig) -> List[QuestionSchema]:
+    async def generate_quiz(self, config: QuizConfig, history_context: str = "") -> List[QuestionSchema]:
         async with self.throttler:
-            prompt = self._create_quiz_prompt(config)
+            prompt = self._create_quiz_prompt(config, history_context)
             
             model = genai.GenerativeModel(self.model)
             response = model.generate_content(prompt)
@@ -222,7 +222,7 @@ class GoogleProvider(LLMProvider):
             
             return response.text
     
-    def _create_quiz_prompt(self, config: QuizConfig) -> str:
+    def _create_quiz_prompt(self, config: QuizConfig, history_context: str = "") -> str:
         return f"""
 You are an expert quiz generator. Create a multiple choice quiz on the topic: "{config.topic}"
 
@@ -232,6 +232,7 @@ Requirements:
 - Each question must have exactly 4 options (A, B, C, D)
 - Provide clear explanations for correct answers
 - Ensure questions are appropriate for the specified difficulty level
+{history_context}
 
 Respond ONLY with valid JSON in this exact format:
 {{
@@ -239,13 +240,11 @@ Respond ONLY with valid JSON in this exact format:
     {{
       "question": "Question text here?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct_answer": "Option A",
-      "explanation": "Detailed explanation of why this is correct."
+      "correct_answer": 0,
+      "explanation": "Explanation for why this answer is correct"
     }}
   ]
 }}
-
-Important: Ensure all questions are unique and relevant to the topic. Make explanations educational and helpful.
 """
 
     def _parse_quiz_response(self, content: str) -> List[QuestionSchema]:
@@ -308,12 +307,12 @@ class GroqProvider(LLMProvider):
         super().__init__("groq", settings.groq_model, settings.groq_api_key)
         self.client = Groq(api_key=self.api_key) if self.api_key else None
     
-    async def generate_quiz(self, config: QuizConfig) -> List[QuestionSchema]:
+    async def generate_quiz(self, config: QuizConfig, history_context: str = "") -> List[QuestionSchema]:
         if not self.client:
             raise Exception("Groq API key not configured")
             
         async with self.throttler:
-            prompt = self._create_quiz_prompt(config)
+            prompt = self._create_quiz_prompt(config, history_context)
             
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -347,7 +346,7 @@ class GroqProvider(LLMProvider):
             
             return response.choices[0].message.content
     
-    def _create_quiz_prompt(self, config: QuizConfig) -> str:
+    def _create_quiz_prompt(self, config: QuizConfig, history_context: str = "") -> str:
         return f"""
 You are an expert quiz generator. Create a multiple choice quiz on the topic: "{config.topic}"
 
@@ -357,6 +356,7 @@ Requirements:
 - Each question must have exactly 4 options (A, B, C, D)
 - Provide clear explanations for correct answers
 - Ensure questions are appropriate for the specified difficulty level
+{history_context}
 
 Respond ONLY with valid JSON in this exact format:
 {{
@@ -433,12 +433,12 @@ class CohereProvider(LLMProvider):
         super().__init__("cohere", settings.cohere_model, settings.cohere_api_key)
         self.client = cohere.Client(self.api_key) if self.api_key else None
     
-    async def generate_quiz(self, config: QuizConfig) -> List[QuestionSchema]:
+    async def generate_quiz(self, config: QuizConfig, history_context: str = "") -> List[QuestionSchema]:
         if not self.client:
             raise Exception("Cohere API key not configured")
             
         async with self.throttler:
-            prompt = self._create_quiz_prompt(config)
+            prompt = self._create_quiz_prompt(config, history_context)
             
             response = self.client.chat(
                 model=self.model,
@@ -465,7 +465,7 @@ class CohereProvider(LLMProvider):
             
             return response.text
     
-    def _create_quiz_prompt(self, config: QuizConfig) -> str:
+    def _create_quiz_prompt(self, config: QuizConfig, history_context: str = "") -> str:
         return f"""
 You are an expert quiz generator. Create a multiple choice quiz on the topic: "{config.topic}"
 
@@ -475,6 +475,7 @@ Requirements:
 - Each question must have exactly 4 options (A, B, C, D)
 - Provide clear explanations for correct answers
 - Ensure questions are appropriate for the specified difficulty level
+{history_context}
 
 Respond ONLY with valid JSON in this exact format:
 {{
@@ -508,12 +509,12 @@ class MistralProvider(LLMProvider):
         super().__init__("mistral", settings.mistral_model, settings.mistral_api_key)
         self.client = MistralClient(api_key=self.api_key) if self.api_key else None
     
-    async def generate_quiz(self, config: QuizConfig) -> List[QuestionSchema]:
+    async def generate_quiz(self, config: QuizConfig, history_context: str = "") -> List[QuestionSchema]:
         if not self.client:
             raise Exception("Mistral API key not configured")
             
         async with self.throttler:
-            prompt = self._create_quiz_prompt(config)
+            prompt = self._create_quiz_prompt(config, history_context)
             
             messages = [
                 MistralChatMessage(role="system", content="You are a quiz generation expert. Always respond with valid JSON."),
@@ -551,7 +552,7 @@ class MistralProvider(LLMProvider):
             
             return response.choices[0].message.content
     
-    def _create_quiz_prompt(self, config: QuizConfig) -> str:
+    def _create_quiz_prompt(self, config: QuizConfig, history_context: str = "") -> str:
         return f"""
 You are an expert quiz generator. Create a multiple choice quiz on the topic: "{config.topic}"
 
@@ -561,6 +562,7 @@ Requirements:
 - Each question must have exactly 4 options (A, B, C, D)
 - Provide clear explanations for correct answers
 - Ensure questions are appropriate for the specified difficulty level
+{history_context}
 
 Respond ONLY with valid JSON in this exact format:
 {{
@@ -594,9 +596,9 @@ class OllamaProvider(LLMProvider):
         super().__init__("ollama", settings.ollama_model, None)
         self.base_url = settings.ollama_base_url or "http://localhost:11434"
     
-    async def generate_quiz(self, config: QuizConfig) -> List[QuestionSchema]:
+    async def generate_quiz(self, config: QuizConfig, history_context: str = "") -> List[QuestionSchema]:
         async with self.throttler:
-            prompt = self._create_quiz_prompt(config)
+            prompt = self._create_quiz_prompt(config, history_context)
             
             async with httpx.AsyncClient() as client:
                 response = await client.post(
@@ -632,7 +634,7 @@ class OllamaProvider(LLMProvider):
                 
                 return result["response"]
     
-    def _create_quiz_prompt(self, config: QuizConfig) -> str:
+    def _create_quiz_prompt(self, config: QuizConfig, history_context: str = "") -> str:
         return f"""
 You are an expert quiz generator. Create a multiple choice quiz on the topic: "{config.topic}"
 
@@ -642,6 +644,7 @@ Requirements:
 - Each question must have exactly 4 options (A, B, C, D)
 - Provide clear explanations for correct answers
 - Ensure questions are appropriate for the specified difficulty level
+{history_context}
 
 Respond ONLY with valid JSON in this exact format:
 {{
@@ -705,16 +708,18 @@ class MultiLLMService:
             self.providers["ollama"] = OllamaProvider()
         
         # Set up quiz generation providers
-        for provider_name in settings.quiz_generation_models:
-            if provider_name in self.providers:
-                self.quiz_providers.append(self.providers[provider_name])
+        quiz_models = settings.quiz_generation_models.split(',') if isinstance(settings.quiz_generation_models, str) else settings.quiz_generation_models
+        for provider_name in quiz_models:
+            if provider_name.strip() in self.providers:
+                self.quiz_providers.append(self.providers[provider_name.strip()])
         
         # Set up chatbot providers
-        for provider_name in settings.chatbot_models:
-            if provider_name in self.providers:
-                self.chatbot_providers.append(self.providers[provider_name])
+        chat_models = settings.chatbot_models.split(',') if isinstance(settings.chatbot_models, str) else settings.chatbot_models
+        for provider_name in chat_models:
+            if provider_name.strip() in self.providers:
+                self.chatbot_providers.append(self.providers[provider_name.strip()])
     
-    async def generate_quiz(self, config: QuizConfig) -> List[QuestionSchema]:
+    async def generate_quiz(self, config: QuizConfig, history_context: str = "") -> List[QuestionSchema]:
         """Generate quiz using multiple providers with fallback"""
         
         if not self.quiz_providers:
@@ -724,7 +729,7 @@ class MultiLLMService:
         for provider in self.quiz_providers:
             try:
                 start_time = time.time()
-                questions = await provider.generate_quiz(config)
+                questions = await provider.generate_quiz(config, history_context)
                 generation_time = time.time() - start_time
                 
                 print(f"Quiz generated by {provider.name} in {generation_time:.2f}s")

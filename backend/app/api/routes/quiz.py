@@ -5,14 +5,13 @@ import json
 from datetime import datetime
 from app.core.database import get_db
 from app.core.auth import get_current_active_user
-from app.core.redis_client import get_redis
 from app.models.user import User
 from app.models.quiz import Quiz, Question, UserAnswer
 from app.schemas.quiz import (
     QuizConfig, QuizResponse, QuizCreate, Quiz as QuizSchema,
     UserAnswerCreate, QuizResult, ChatMessage
 )
-from app.services.openai_service import OpenAIService
+from app.services.llm_service import llm_service
 
 router = APIRouter()
 
@@ -20,58 +19,24 @@ router = APIRouter()
 async def generate_quiz(
     config: QuizConfig,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db),
-    redis = Depends(get_redis)
+    db: Session = Depends(get_db)
 ):
     """
-    Generate a new quiz using OpenAI with caching for performance.
+    Generate a new quiz using LLM service.
     """
     
-    # Create cache key for this quiz configuration
-    cache_key = f"quiz:{current_user.id}:{config.topic}:{config.difficulty}:{config.num_questions}"
-    
-    # Check cache first
-    cached_quiz = await redis.get(cache_key)
-    if cached_quiz:
-        return json.loads(cached_quiz)
-    
     try:
-        # Generate quiz using OpenAI
-        questions = await OpenAIService.generate_quiz(config)
+        # Generate quiz using LLM service
+        questions = await llm_service.generate_quiz(config)
         
-        # Create quiz in database
-        db_quiz = Quiz(
-            user_id=current_user.id,
-            topic=config.topic,
-            difficulty=config.difficulty,
-            num_questions=config.num_questions,
-            time_limit=config.time_limit
-        )
-        db.add(db_quiz)
-        db.commit()
-        db.refresh(db_quiz)
-        
-        # Store questions in database
-        for i, question_data in enumerate(questions, 1):
-            db_question = Question(
-                quiz_id=db_quiz.id,
-                question_text=question_data.question,
-                options=question_data.options,
-                correct_answer=question_data.correct_answer,
-                explanation=question_data.explanation,
-                question_number=i
-            )
-            db.add(db_question)
-        
-        db.commit()
-        
-        # Cache the quiz for 1 hour
+        # Return the quiz response
         quiz_response = QuizResponse(quiz=questions)
-        await redis.setex(cache_key, 3600, json.dumps(quiz_response.dict()))
-        
         return quiz_response
         
     except Exception as e:
+        print(f"Quiz generation error: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate quiz: {str(e)}"

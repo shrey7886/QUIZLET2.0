@@ -1,330 +1,237 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import ReactSlider from 'react-slider';
-import { useNavigate } from 'react-router-dom';
-import { quizAPI } from '../services/api';
-import { QuizConfig } from '../types';
-import Header from './Header';
-
-interface QuizFormData {
-  topic: string;
-  difficulty: string;
-  num_questions: number;
-  time_limit: number;
-}
+import { useAuth } from '../contexts/AuthContext';
 
 const QuizDashboard: React.FC = () => {
-  const navigate = useNavigate();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string>('');
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<QuizFormData>({
-    defaultValues: {
-      topic: '',
-      difficulty: 'Medium',
-      num_questions: 5,
-      time_limit: 10,
-    },
-  });
-
-  const watchedNumQuestions = watch('num_questions');
-  const watchedTimeLimit = watch('time_limit');
-
-  const onSubmit = async (data: QuizFormData) => {
-    setIsGenerating(true);
-    setError('');
-
-    try {
-      const quizResponse = await quizAPI.generateQuiz(data);
-      navigate('/quiz', { 
-        state: { 
-          questions: quizResponse.data?.quiz || quizResponse.data || [],
-          config: data 
-        } 
-      });
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to generate quiz. Please try again.');
-    } finally {
-      setIsGenerating(false);
-    }
+  // Sample data for demonstration
+  const stats = {
+    totalQuizzes: 24,
+    completedQuizzes: 18,
+    averageScore: 85,
+    studyStreak: 7,
+    totalStudyTime: 12.5,
+    accuracyRate: 92
   };
 
-  const difficultyOptions = [
-    { value: 'Easy', label: 'Easy', color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
-    { value: 'Medium', label: 'Medium', color: 'text-yellow-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
-    { value: 'Hard', label: 'Hard', color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
+  const recentActivity = [
+    { id: 1, type: 'quiz', title: 'JavaScript Fundamentals', score: 88, date: '2 hours ago' },
+    { id: 2, type: 'flashcard', title: 'React Hooks', score: 95, date: '1 day ago' },
+    { id: 3, type: 'quiz', title: 'Python Basics', score: 76, date: '2 days ago' },
+    { id: 4, type: 'flashcard', title: 'CSS Grid', score: 91, date: '3 days ago' }
   ];
 
-  const quickStartTopics = [
-    { 
-      topic: 'Python Basics', 
-      difficulty: 'Easy', 
-      questions: 5, 
-      time: 10,
-      icon: '🐍',
-      description: 'Learn fundamental Python concepts'
-    },
-    { 
-      topic: 'JavaScript Fundamentals', 
-      difficulty: 'Medium', 
-      questions: 8, 
-      time: 15,
-      icon: '⚡',
-      description: 'Master JavaScript essentials'
-    },
-    { 
-      topic: 'Data Structures & Algorithms', 
-      difficulty: 'Hard', 
-      questions: 10, 
-      time: 20,
-      icon: '🧮',
-      description: 'Advanced programming concepts'
-    },
+  const quickActions = [
+    { id: 1, title: 'Create Quiz', description: 'Generate a new quiz', icon: '📝', color: 'from-blue-500 to-cyan-500', href: '/quiz' },
+    { id: 2, title: 'Study Cards', description: 'Review flashcards', icon: '🗂️', color: 'from-purple-500 to-pink-500', href: '/flashcards' },
+    { id: 3, title: 'AI Chat', description: 'Ask questions', icon: '🤖', color: 'from-indigo-500 to-purple-500', href: '/chat' },
+    { id: 4, title: 'Analytics', description: 'View progress', icon: '📊', color: 'from-green-500 to-emerald-500', href: '/analytics' }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <Header />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Hero Section */}
-        <div className="text-center mb-12 animate-fade-in">
-          <h1 className="text-5xl font-bold text-slate-900 mb-4">
-            Create Your Perfect
-            <span className="gradient-text block">Quiz Experience</span>
-          </h1>
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-            Choose your topic, difficulty, and settings to generate a personalized quiz powered by advanced AI
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Floating Elements */}
+        <div className="absolute top-20 left-20 w-2 h-2 bg-blue-400 rounded-full animate-pulse opacity-60"></div>
+        <div className="absolute top-40 right-32 w-1 h-1 bg-purple-400 rounded-full animate-bounce opacity-80"></div>
+        <div className="absolute bottom-32 left-40 w-3 h-3 bg-pink-400 rounded-full animate-ping opacity-40"></div>
+        <div className="absolute bottom-20 right-20 w-2 h-2 bg-cyan-400 rounded-full animate-pulse opacity-70"></div>
+        <div className="absolute top-1/2 left-1/4 w-1 h-1 bg-yellow-400 rounded-full animate-bounce opacity-90"></div>
+        
+        {/* Geometric Shapes */}
+        <div className="absolute top-10 right-10 w-20 h-20 border border-white/10 rounded-full animate-spin-slow"></div>
+        <div className="absolute bottom-10 left-10 w-16 h-16 border border-purple-400/20 rounded-lg animate-pulse"></div>
+        <div className="absolute top-1/3 right-1/4 w-12 h-12 border border-blue-400/30 rotate-45 animate-pulse"></div>
+        
+        {/* Gradient Orbs */}
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-500/10 to-purple-600/10 rounded-full mix-blend-multiply filter blur-xl animate-float"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-500/10 to-pink-600/10 rounded-full mix-blend-multiply filter blur-xl animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-40 left-40 w-60 h-60 bg-gradient-to-br from-indigo-500/10 to-blue-600/10 rounded-full mix-blend-multiply filter blur-xl animate-float" style={{ animationDelay: '4s' }}></div>
+      </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Quiz Configuration */}
-          <div className="lg:col-span-2">
-            <div className="card animate-slide-up">
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900">Quiz Configuration</h2>
+      {/* Main Content */}
+      <div className="relative z-10 pt-20 pb-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Welcome Section */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Welcome back, {user?.username || 'Learner'}! 👋
+            </h1>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              Ready to continue your learning journey? Let's make today productive!
+            </p>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {/* Total Quizzes */}
+            <div className="stat-card group">
+              <div className="stat-icon bg-gradient-to-br from-blue-500 to-cyan-500">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </div>
+              <div className="stat-content">
+                <h3 className="stat-title">Total Quizzes</h3>
+                <p className="stat-value">{stats.totalQuizzes}</p>
+                <p className="stat-change text-green-400">+3 this week</p>
+              </div>
+            </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center space-x-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-sm font-medium">{error}</span>
-                  </div>
-                )}
+            {/* Average Score */}
+            <div className="stat-card group">
+              <div className="stat-icon bg-gradient-to-br from-purple-500 to-pink-500">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div className="stat-content">
+                <h3 className="stat-title">Average Score</h3>
+                <p className="stat-value">{stats.averageScore}%</p>
+                <p className="stat-change text-green-400">+5% this month</p>
+              </div>
+            </div>
 
-                {/* Topic Selection */}
-                <div>
-                  <label htmlFor="topic" className="block text-lg font-semibold text-slate-900 mb-3">
-                    What would you like to learn about?
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    </div>
-                    <input
-                      id="topic"
-                      type="text"
-                      {...register('topic', {
-                        required: 'Topic is required',
-                        minLength: {
-                          value: 3,
-                          message: 'Topic must be at least 3 characters',
-                        },
-                      })}
-                      className="input-field pl-12 text-lg"
-                      placeholder="e.g., Python Programming, World History, Mathematics..."
-                    />
-                  </div>
-                  {errors.topic && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center">
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      {errors.topic.message}
-                    </p>
-                  )}
-                </div>
+            {/* Study Streak */}
+            <div className="stat-card group">
+              <div className="stat-icon bg-gradient-to-br from-yellow-500 to-orange-500">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div className="stat-content">
+                <h3 className="stat-title">Study Streak</h3>
+                <p className="stat-value">{stats.studyStreak} days</p>
+                <p className="stat-change text-green-400">🔥 Keep it up!</p>
+              </div>
+            </div>
 
-                {/* Difficulty Selection */}
-                <div>
-                  <label className="block text-lg font-semibold text-slate-900 mb-3">
-                    Choose Difficulty Level
-                  </label>
-                  <div className="grid grid-cols-3 gap-4">
-                    {difficultyOptions.map((option) => (
-                      <label
-                        key={option.value}
-                        className={`relative flex cursor-pointer rounded-xl border-2 p-4 transition-all duration-300 hover:shadow-md ${
-                          watch('difficulty') === option.value
-                            ? `${option.borderColor} ${option.bgColor} shadow-md scale-105`
-                            : 'border-slate-200 bg-white hover:border-slate-300'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          value={option.value}
-                          {...register('difficulty')}
-                          className="sr-only"
-                        />
-                        <div className="flex flex-col items-center text-center">
-                          <span className={`text-lg font-semibold ${option.color} mb-1`}>
-                            {option.label}
-                          </span>
-                          <span className="text-xs text-slate-500">
-                            {option.value === 'Easy' && 'Beginner friendly'}
-                            {option.value === 'Medium' && 'Balanced challenge'}
-                            {option.value === 'Hard' && 'Advanced concepts'}
-                          </span>
-                        </div>
-                        <div className="absolute top-2 right-2 w-4 h-4 border-2 border-slate-300 rounded-full">
-                          {watch('difficulty') === option.value && (
-                            <div className="w-2 h-2 bg-blue-600 rounded-full m-0.5"></div>
-                          )}
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+            {/* Total Study Time */}
+            <div className="stat-card group">
+              <div className="stat-icon bg-gradient-to-br from-green-500 to-emerald-500">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="stat-content">
+                <h3 className="stat-title">Study Time</h3>
+                <p className="stat-value">{stats.totalStudyTime}h</p>
+                <p className="stat-change text-green-400">+2.5h this week</p>
+              </div>
+            </div>
 
-                {/* Number of Questions Slider */}
-                <div>
-                  <label className="block text-lg font-semibold text-slate-900 mb-3">
-                    Number of Questions: <span className="text-blue-600">{watchedNumQuestions}</span>
-                  </label>
-                  <div className="px-2">
-                    <ReactSlider
-                      className="w-full h-3 bg-slate-200 rounded-full appearance-none cursor-pointer"
-                      thumbClassName="w-6 h-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full cursor-pointer focus:outline-none focus:ring-4 focus:ring-blue-500/30 shadow-lg"
-                      trackClassName="h-3 bg-gradient-to-r from-blue-200 to-indigo-200 rounded-full"
-                      value={watchedNumQuestions}
-                      onChange={(value) => setValue('num_questions', value)}
-                      min={1}
-                      max={15}
-                      step={1}
-                    />
-                  </div>
-                  <div className="flex justify-between text-sm text-slate-500 mt-2">
-                    <span>1 question</span>
-                    <span>15 questions</span>
-                  </div>
-                </div>
+            {/* Accuracy Rate */}
+            <div className="stat-card group">
+              <div className="stat-icon bg-gradient-to-br from-indigo-500 to-purple-500">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="stat-content">
+                <h3 className="stat-title">Accuracy Rate</h3>
+                <p className="stat-value">{stats.accuracyRate}%</p>
+                <p className="stat-change text-green-400">+3% improvement</p>
+              </div>
+            </div>
 
-                {/* Time Limit Slider */}
-                <div>
-                  <label className="block text-lg font-semibold text-slate-900 mb-3">
-                    Time Limit: <span className="text-blue-600">{watchedTimeLimit} minutes</span>
-                  </label>
-                  <div className="px-2">
-                    <ReactSlider
-                      className="w-full h-3 bg-slate-200 rounded-full appearance-none cursor-pointer"
-                      thumbClassName="w-6 h-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full cursor-pointer focus:outline-none focus:ring-4 focus:ring-blue-500/30 shadow-lg"
-                      trackClassName="h-3 bg-gradient-to-r from-blue-200 to-indigo-200 rounded-full"
-                      value={watchedTimeLimit}
-                      onChange={(value) => setValue('time_limit', value)}
-                      min={1}
-                      max={120}
-                      step={1}
-                    />
-                  </div>
-                  <div className="flex justify-between text-sm text-slate-500 mt-2">
-                    <span>1 minute</span>
-                    <span>120 minutes</span>
-                  </div>
-                </div>
-
-                {/* Generate Button */}
-                <button
-                  type="submit"
-                  disabled={isGenerating}
-                  className="btn-primary w-full flex justify-center items-center py-4 px-6 text-xl font-bold"
-                >
-                  {isGenerating ? (
-                    <div className="flex items-center">
-                      <div className="spinner w-6 h-6 mr-3"></div>
-                      <span>Generating Your Quiz...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center">
-                      <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      Generate Quiz
-                    </div>
-                  )}
-                </button>
-              </form>
+            {/* Completion Rate */}
+            <div className="stat-card group">
+              <div className="stat-icon bg-gradient-to-br from-pink-500 to-rose-500">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="stat-content">
+                <h3 className="stat-title">Completion Rate</h3>
+                <p className="stat-value">{Math.round((stats.completedQuizzes / stats.totalQuizzes) * 100)}%</p>
+                <p className="stat-change text-green-400">{stats.completedQuizzes}/{stats.totalQuizzes} completed</p>
+              </div>
             </div>
           </div>
 
-          {/* Quick Start Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="card animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl flex items-center justify-center mr-3">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-slate-900">Quick Start</h3>
-              </div>
+          {/* Quick Actions */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-white mb-6">Quick Actions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {quickActions.map((action) => (
+                <a
+                  key={action.id}
+                  href={action.href}
+                  className="quick-action-card group"
+                >
+                  <div className={`quick-action-icon bg-gradient-to-br ${action.color}`}>
+                    <span className="text-2xl">{action.icon}</span>
+                  </div>
+                  <div className="quick-action-content">
+                    <h3 className="quick-action-title">{action.title}</h3>
+                    <p className="quick-action-description">{action.description}</p>
+                  </div>
+                  <div className="quick-action-arrow">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
 
-              <div className="space-y-4">
-                {quickStartTopics.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      setValue('topic', suggestion.topic);
-                      setValue('difficulty', suggestion.difficulty);
-                      setValue('num_questions', suggestion.questions);
-                      setValue('time_limit', suggestion.time);
-                    }}
-                    className="w-full p-4 border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] text-left"
-                  >
-                    <div className="flex items-start space-x-3">
-                      <span className="text-2xl">{suggestion.icon}</span>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-slate-900 mb-1">{suggestion.topic}</h4>
-                        <p className="text-sm text-slate-600 mb-2">{suggestion.description}</p>
-                        <div className="flex items-center space-x-2 text-xs">
-                          <span className={`badge ${
-                            suggestion.difficulty === 'Easy' ? 'badge-success' :
-                            suggestion.difficulty === 'Medium' ? 'badge-warning' : 'badge-error'
-                          }`}>
-                            {suggestion.difficulty}
-                          </span>
-                          <span className="text-slate-500">•</span>
-                          <span className="text-slate-500">{suggestion.questions} questions</span>
-                          <span className="text-slate-500">•</span>
-                          <span className="text-slate-500">{suggestion.time} min</span>
-                        </div>
+          {/* Recent Activity */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-white mb-6">Recent Activity</h2>
+            <div className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
+              <div className="p-6">
+                <div className="space-y-4">
+                  {recentActivity.map((activity) => (
+                    <div key={activity.id} className="activity-item group">
+                      <div className="activity-icon">
+                        {activity.type === 'quiz' ? (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="activity-content">
+                        <h4 className="activity-title">{activity.title}</h4>
+                        <p className="activity-score">Score: {activity.score}%</p>
+                      </div>
+                      <div className="activity-time">
+                        <span className="text-sm text-gray-400">{activity.date}</span>
                       </div>
                     </div>
-                  </button>
-                ))}
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Section */}
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-6">Learning Progress</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Weekly Progress */}
+              <div className="progress-card">
+                <h3 className="progress-title">Weekly Progress</h3>
+                <div className="progress-bar-container">
+                  <div className="progress-bar" style={{ width: '75%' }}></div>
+                </div>
+                <p className="progress-text">75% of weekly goal completed</p>
               </div>
 
-              <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-                <h4 className="font-semibold text-slate-900 mb-2">💡 Pro Tip</h4>
-                <p className="text-sm text-slate-600">
-                  Start with easier topics and gradually increase difficulty as you improve. Our AI adapts to your learning pace!
-                </p>
+              {/* Monthly Streak */}
+              <div className="progress-card">
+                <h3 className="progress-title">Monthly Streak</h3>
+                <div className="streak-display">
+                  <div className="streak-number">{stats.studyStreak}</div>
+                  <div className="streak-label">days</div>
+                </div>
+                <p className="progress-text">Keep the momentum going!</p>
               </div>
             </div>
           </div>
