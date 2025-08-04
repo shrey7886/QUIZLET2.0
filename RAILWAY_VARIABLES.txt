@@ -1,0 +1,32 @@
+# Copy these variables to Railway Dashboard
+
+# Security Configuration
+SECRET_KEY=yCvOIyOpbyZPSxOHx3OoX6mAN9lvrXHlysVVQLemU24
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# LLM Provider API Keys
+GOOGLE_API_KEY=AIzaSyBejBZfI1HFC43QOJ5pqWqpsRxa72oMZFI
+GOOGLE_MODEL=gemini-1.5-flash
+
+GROQ_API_KEY=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
+GROQ_MODEL=mixtral-8x7b-32768
+
+COHERE_API_KEY=o9tJyWIy8GXbsKYViGHdDD7TUlhouodmLyhrxTq0
+COHERE_MODEL=command-r-plus
+
+# Optional: Add these if you have them
+# OPENAI_API_KEY=your_openai_key_here
+# ANTHROPIC_API_KEY=your_anthropic_key_here
+# MISTRAL_API_KEY=your_mistral_key_here
+
+# LLM Strategy Configuration
+QUIZ_GENERATION_MODELS=groq,google,cohere
+CHATBOT_MODELS=cohere,google,groq
+ENABLE_FALLBACK=true
+MAX_RETRIES=3
+TIMEOUT_SECONDS=30
+
+# App Configuration
+APP_NAME=Dynamic Quiz API
+DEBUG=False 

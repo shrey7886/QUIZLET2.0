@@ -1,0 +1,87 @@
+services:
+  # Integrated Quizlet App Service
+  - type: web
+    name: quizlet-app
+    env: python
+    plan: free
+    buildCommand: |
+      # Install Python dependencies
+      pip install -r requirements.txt
+      
+      # Install Node.js dependencies and build frontend
+      cd frontend
+      npm install
+      npm run build
+      cd ..
+      
+      # Create static directory and copy frontend build
+      mkdir -p static
+      cp -r frontend/build/* static/
+      
+      # Initialize database (if needed)
+      python -c "from app.core.database import engine; from app.models import user, quiz, analytics, flashcards, chat; user.Base.metadata.create_all(bind=engine); quiz.Base.metadata.create_all(bind=engine); analytics.Base.metadata.create_all(bind=engine); flashcards.Base.metadata.create_all(bind=engine); chat.Base.metadata.create_all(bind=engine)"
+    
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    
+    envVars:
+      # Security
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      
+      # Database (using SQLite for simplicity)
+      - key: DATABASE_URL
+        value: sqlite:///./quizlet.db
+      
+      # LLM Provider API Keys
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: COHERE_API_KEY
+        sync: false
+      
+      # LLM Model Configuration
+      - key: GOOGLE_MODEL
+        value: gemini-1.5-flash
+      - key: GROQ_MODEL
+        value: gemma2-9b-it
+      - key: COHERE_MODEL
+        value: command-r-plus
+      
+      # Feature Configuration
+      - key: QUIZ_GENERATION_MODELS
+        value: groq,google,cohere
+      - key: CHATBOT_MODELS
+        value: cohere,google,groq
+      - key: ENABLE_FALLBACK
+        value: true
+      - key: MAX_RETRIES
+        value: 3
+      - key: TIMEOUT_SECONDS
+        value: 30
+      
+      # App Configuration
+      - key: APP_NAME
+        value: Quizlet AI Quiz Generator
+      - key: DEBUG
+        value: false
+      - key: ENVIRONMENT
+        value: production
+      
+      # CORS Configuration
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      
+      # Redis (optional for caching)
+      - key: REDIS_URL
+        value: ""
+      
+      # Frontend Configuration
+      - key: REACT_APP_API_URL
+        value: "" 
