@@ -13,19 +13,19 @@ from typing import Dict, List
 PRIMARY_MODELS = {
     "google": {
         "name": "Google Gemini",
-        "api_key": "AIzaSyBejBZfI1HFC43QOJ5pqWqpsRxa72oMZFI",
+        "api_key": "your-google-api-key-here",
         "model": "gemini-1.5-flash",
         "test_url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
     },
     "groq": {
         "name": "Groq",
-        "api_key": "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",
+        "api_key": "your-groq-api-key-here",
         "model": "mixtral-8x7b-32768",
         "test_url": "https://api.groq.com/openai/v1/chat/completions"
     },
     "cohere": {
         "name": "Cohere",
-        "api_key": "o9tJyWIy8GXbsKYViGHdDD7TUlhouodmLyhrxTq0",
+        "api_key": "your-cohere-api-key-here",
         "model": "command-r-plus",
         "test_url": "https://api.cohere.ai/v1/chat"
     }

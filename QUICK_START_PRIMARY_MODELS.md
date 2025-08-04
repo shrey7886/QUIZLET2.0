@@ -71,9 +71,9 @@ Your `.env` file is configured with:
 
 ```env
 # Primary Models (Your API Keys)
-GOOGLE_API_KEY=AIzaSyBejBZfI1HFC43QOJ5pqWqpsRxa72oMZFI
-GROQ_API_KEY=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
-COHERE_API_KEY=o9tJyWIy8GXbsKYViGHdDD7TUlhouodmLyhrxTq0
+GOOGLE_API_KEY=your-google-api-key-here
+GROQ_API_KEY=your-groq-api-key-here
+COHERE_API_KEY=your-cohere-api-key-here
 
 # Optimized Strategy
 QUIZ_GENERATION_MODELS=groq,google,cohere
