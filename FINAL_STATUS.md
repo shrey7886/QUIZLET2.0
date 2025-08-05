@@ -103,9 +103,9 @@ Follow the instructions in `GOOGLE_OAUTH_SETUP.md`:
 
 ### **2. API Keys (Already Configured)**
 Your API keys are already set up:
-- ✅ Google AI: `AIzaSyDxq13kKgGwUInSJjzD1kfS1ZlQoprZRiY`
-- ✅ Groq: `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`
-- ✅ Mistral AI: `ag:e6109fbb:20250803:untitled-agent:2086c4b0`
+- ✅ Google AI: [Configured and working]
+- ✅ Groq: [Configured and working]
+- ✅ Mistral AI: [Configured and working]
 
 ### **3. Production Deployment**
 Ready for deployment to:

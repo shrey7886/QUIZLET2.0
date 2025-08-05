@@ -56,9 +56,9 @@ Render should auto-detect your `render.yaml` configuration, but verify these set
 Click on **"Environment"** tab and add these variables:
 
 ```
-GOOGLE_API_KEY=AIzaSyDxq13kKgGwUInSJjzD1kfS1ZlQoprZRiY
-GROQ_API_KEY=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
-MISTRAL_API_KEY=ag:e6109fbb:20250803:untitled-agent:2086c4b0
+GOOGLE_API_KEY=your-google-api-key-here
+GROQ_API_KEY=your-groq-api-key-here
+MISTRAL_API_KEY=your-mistral-api-key-here
 SECRET_KEY=your-secret-key-here-make-it-long-and-random
 DATABASE_URL=sqlite:///./quizlet.db
 ```
