@@ -57,7 +57,7 @@ Click on **"Environment"** tab and add these variables:
 
 ```
 GOOGLE_API_KEY=your-google-api-key-here
-GROQ_API_KEY=your-groq-api-key-here
+GROQ_API_KEY=YOUR_GROQ_API_KEY_HERE
 MISTRAL_API_KEY=your-mistral-api-key-here
 SECRET_KEY=your-secret-key-here-make-it-long-and-random
 DATABASE_URL=sqlite:///./quizlet.db

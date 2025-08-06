@@ -38,7 +38,7 @@ DATABASE_URL=sqlite:///./quizlet.db
 
 # LLM Provider API Keys
 GOOGLE_API_KEY=your-google-api-key-here
-GROQ_API_KEY=your-groq-api-key-here
+GROQ_API_KEY=YOUR_GROQ_API_KEY_HERE
 COHERE_API_KEY=your-cohere-api-key-here
 
 # Optional (paid providers)
