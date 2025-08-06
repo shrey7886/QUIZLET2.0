@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const QuizDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
 
   // Sample data for demonstration
   const stats = {

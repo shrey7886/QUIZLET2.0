@@ -176,7 +176,7 @@ async def chat_with_tutor(
     Chat with the AI tutor for help with questions.
     """
     try:
-        response = await OpenAIService.get_chat_response(message.message, message.context)
+        response = await llm_service.get_chat_response(message.message, message.context)
         return {"response": response}
     except Exception as e:
         raise HTTPException(

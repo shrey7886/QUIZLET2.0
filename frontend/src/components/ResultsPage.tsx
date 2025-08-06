@@ -270,7 +270,7 @@ const ResultsPage: React.FC = () => {
                     <p className="text-white mb-4 leading-relaxed">{question.question}</p>
 
                     <div className="space-y-2 mb-4">
-                      {question.options.map((option, optionIndex) => (
+                      {question.options.map((option: string, optionIndex: number) => (
                         <div
                           key={optionIndex}
                           className={`p-3 rounded-lg border-2 ${

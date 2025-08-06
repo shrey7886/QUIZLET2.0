@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
 import LoginForm from './components/LoginForm';
+import RegisterForm from './components/RegisterForm';
 import QuizDashboard from './components/QuizDashboard';
 import QuizGenerator from './components/QuizGenerator';
 import QuizInterface from './components/QuizInterface';
@@ -20,6 +21,7 @@ function App() {
           <Header />
           <Routes>
             <Route path="/login" element={<LoginForm />} />
+            <Route path="/register" element={<RegisterForm />} />
             <Route 
               path="/dashboard" 
               element={

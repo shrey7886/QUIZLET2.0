@@ -6,9 +6,9 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite:///./quizlet.db"
     
-    # For Vercel deployment - use environment variable if available
-    @property
-    def database_url_property(self):
+    # For compatibility with environment variable naming
+    @property 
+    def DATABASE_URL(self):
         return os.getenv("DATABASE_URL", self.database_url)
     
     # Redis

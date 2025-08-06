@@ -9,12 +9,13 @@ interface Question {
   explanation?: string;
 }
 
-interface QuizConfig {
-  topic: string;
-  difficulty: string;
-  num_questions: number;
-  time_limit?: number;
-}
+// QuizConfig interface moved to types file
+// interface QuizConfig {
+//   topic: string;
+//   difficulty: string;
+//   num_questions: number;
+//   time_limit?: number;
+// }
 
 const QuizInterface: React.FC = () => {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ const QuizInterface: React.FC = () => {
   const [isAnswered, setIsAnswered] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [timeLeft, setTimeLeft] = useState(config.time_limit || 300); // 5 minutes default
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [isSubmitting, setIsSubmitting] = useState(false);
   const [answers, setAnswers] = useState<(number | null)[]>(new Array(questions.length).fill(null));
   const [score, setScore] = useState(0);
   const [startTime] = useState(Date.now());
@@ -203,7 +204,7 @@ const QuizInterface: React.FC = () => {
 
               {/* Answer Options */}
               <div className="space-y-4">
-                {currentQuestion.options.map((option, index) => (
+                {currentQuestion.options.map((option: string, index: number) => (
                   <button
                     key={index}
                     onClick={() => handleAnswerSelect(index)}
@@ -320,7 +321,7 @@ const QuizInterface: React.FC = () => {
           <div className="mt-8">
             <h3 className="text-white font-semibold mb-4">Question Navigation</h3>
             <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-              {questions.map((_, index) => (
+              {questions.map((_: Question, index: number) => (
                 <button
                   key={index}
                   onClick={() => {

@@ -11,6 +11,8 @@ interface QuizConfig {
 const QuizGenerator: React.FC = () => {
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [customTopic, setCustomTopic] = useState('');
+  const [useCustomTopic, setUseCustomTopic] = useState(false);
   const [config, setConfig] = useState<QuizConfig>({
     topic: '',
     difficulty: 'medium',
@@ -48,8 +50,9 @@ const QuizGenerator: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!config.topic) {
-      alert('Please select a topic');
+    const finalTopic = useCustomTopic ? customTopic.trim() : config.topic;
+    if (!finalTopic) {
+      alert('Please select or enter a topic');
       return;
     }
 
@@ -62,7 +65,7 @@ const QuizGenerator: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(config)
+        body: JSON.stringify({ ...config, topic: finalTopic })
       });
 
       if (response.ok) {
@@ -130,33 +133,107 @@ const QuizGenerator: React.FC = () => {
                 <label className="block text-white font-semibold mb-4 text-lg">
                   📚 Select Topic
                 </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {topics.map((topic) => (
-                    <button
-                      key={topic}
-                      type="button"
-                      onClick={() => setConfig({ ...config, topic })}
-                      className={`p-4 rounded-xl border-2 transition-all duration-200 text-left group ${
-                        config.topic === topic
-                          ? 'border-blue-500 bg-blue-500/20 text-blue-100'
-                          : 'border-white/20 bg-white/5 text-white hover:border-white/40 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="flex items-center">
-                        <div className={`w-4 h-4 rounded-full border-2 mr-3 ${
-                          config.topic === topic
-                            ? 'border-blue-400 bg-blue-400'
-                            : 'border-white/30'
-                        }`}>
-                          {config.topic === topic && (
-                            <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>
-                          )}
-                        </div>
-                        <span className="font-medium">{topic}</span>
-                      </div>
-                    </button>
-                  ))}
+                
+                {/* Toggle between predefined and custom topics */}
+                <div className="flex mb-6 bg-white/5 rounded-xl p-1 border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUseCustomTopic(false);
+                      setCustomTopic('');
+                    }}
+                    className={`flex-1 py-3 px-4 rounded-lg transition-all duration-200 font-medium ${
+                      !useCustomTopic
+                        ? 'bg-blue-500 text-white'
+                        : 'text-gray-300 hover:text-white'
+                    }`}
+                  >
+                    📋 Predefined Topics
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUseCustomTopic(true);
+                      setConfig({ ...config, topic: '' });
+                    }}
+                    className={`flex-1 py-3 px-4 rounded-lg transition-all duration-200 font-medium ${
+                      useCustomTopic
+                        ? 'bg-blue-500 text-white'
+                        : 'text-gray-300 hover:text-white'
+                    }`}
+                  >
+                    ✏️ Custom Topic
+                  </button>
                 </div>
+
+                {/* Predefined Topics */}
+                {!useCustomTopic && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {topics.map((topic) => (
+                      <button
+                        key={topic}
+                        type="button"
+                        onClick={() => setConfig({ ...config, topic })}
+                        className={`p-4 rounded-xl border-2 transition-all duration-200 text-left group ${
+                          config.topic === topic
+                            ? 'border-blue-500 bg-blue-500/20 text-blue-100'
+                            : 'border-white/20 bg-white/5 text-white hover:border-white/40 hover:bg-white/10'
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <div className={`w-4 h-4 rounded-full border-2 mr-3 ${
+                            config.topic === topic
+                              ? 'border-blue-400 bg-blue-400'
+                              : 'border-white/30'
+                          }`}>
+                            {config.topic === topic && (
+                              <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>
+                            )}
+                          </div>
+                          <span className="font-medium">{topic}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Custom Topic Input */}
+                {useCustomTopic && (
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={customTopic}
+                        onChange={(e) => setCustomTopic(e.target.value)}
+                        placeholder="Enter any topic you want to learn about..."
+                        className="w-full px-6 py-4 bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:bg-white/15 transition-all duration-200"
+                        maxLength={100}
+                      />
+                      <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    
+                    {/* Example topics for inspiration */}
+                    <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                      <div className="text-sm text-gray-300 mb-2">💡 Examples:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {['Quantum Physics', 'Ancient History', 'Cooking Techniques', 'Photography', 'Space Exploration', 'Cryptocurrency'].map((example) => (
+                          <button
+                            key={example}
+                            type="button"
+                            onClick={() => setCustomTopic(example)}
+                            className="px-3 py-1 bg-white/10 rounded-full text-xs text-gray-300 hover:bg-white/20 hover:text-white transition-all duration-200"
+                          >
+                            {example}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Difficulty Selection */}
@@ -245,7 +322,9 @@ const QuizGenerator: React.FC = () => {
                 <h3 className="text-white font-semibold mb-4 text-lg">📋 Quiz Summary</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-400">{config.topic || 'Not selected'}</div>
+                    <div className="text-2xl font-bold text-blue-400">
+                      {useCustomTopic ? (customTopic || 'Enter custom topic') : (config.topic || 'Not selected')}
+                    </div>
                     <div className="text-sm text-gray-400">Topic</div>
                   </div>
                   <div className="text-center">
@@ -278,7 +357,7 @@ const QuizGenerator: React.FC = () => {
                 
                 <button
                   type="submit"
-                  disabled={!config.topic || isGenerating}
+                  disabled={(useCustomTopic ? !customTopic.trim() : !config.topic) || isGenerating}
                   className="flex-1 px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 >
                   {isGenerating ? (

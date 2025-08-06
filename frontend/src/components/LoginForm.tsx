@@ -1,15 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 const LoginForm: React.FC = () => {
   const { login } = useAuth();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    // Check if coming from registration page
+    if (location.state?.message) {
+      setSuccess(location.state.message);
+      if (location.state.email) {
+        setFormData(prev => ({ ...prev, email: location.state.email }));
+      }
+    }
+  }, [location.state]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,6 +182,18 @@ const LoginForm: React.FC = () => {
                 </a>
               </div>
             </div>
+
+            {/* Success Message */}
+            {success && (
+              <div className="bg-green-500/20 border border-green-400/30 text-green-200 px-4 py-3 rounded-xl animate-fade-in backdrop-blur-sm">
+                <div className="flex">
+                  <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-sm">{success}</span>
+                </div>
+              </div>
+            )}
 
             {/* Error Message */}
             {error && (

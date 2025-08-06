@@ -298,7 +298,11 @@ Important: Ensure all questions are unique and relevant to the topic. Make expla
 class GroqProvider(LLMProvider):
     def __init__(self):
         super().__init__("groq", settings.groq_model, settings.groq_api_key)
-        self.client = Groq(api_key=self.api_key) if self.api_key else None
+        try:
+            self.client = Groq(api_key=self.api_key) if self.api_key else None
+        except Exception as e:
+            print(f"Warning: Failed to initialize Groq client: {e}")
+            self.client = None
     
     async def generate_quiz(self, config: QuizConfig) -> List[QuestionSchema]:
         if not self.client:

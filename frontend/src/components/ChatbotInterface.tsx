@@ -53,7 +53,7 @@ const ChatbotInterface: React.FC = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          content: inputMessage,
+          message: inputMessage,
           context: 'quiz_help'
         })
       });
@@ -62,7 +62,7 @@ const ChatbotInterface: React.FC = () => {
         const data = await response.json();
         const botMessage: Message = {
           id: (Date.now() + 1).toString(),
-          content: data.message,
+          content: data.response,
           sender: 'bot',
           timestamp: new Date()
         };
