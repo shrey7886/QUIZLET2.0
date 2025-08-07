@@ -20,7 +20,7 @@ PRIMARY_MODELS = {
     "groq": {
         "name": "Groq",
         "api_key": "YOUR_GROQ_API_KEY_HERE",
-        "model": "mixtral-8x7b-32768",
+        "model": "llama-3.1-8b-instant",
         "test_url": "https://api.groq.com/openai/v1/chat/completions"
     },
     "cohere": {
@@ -133,7 +133,7 @@ GOOGLE_MODEL=gemini-1.5-flash
 
 # Groq (Ultra-fast inference) - PRIMARY
 GROQ_API_KEY=YOUR_GROQ_API_KEY_HERE
-GROQ_MODEL=mixtral-8x7b-32768
+GROQ_MODEL=llama-3.1-8b-instant
 
 # Cohere (Command R+) - PRIMARY
 COHERE_API_KEY=your-cohere-api-key-here
